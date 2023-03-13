@@ -5,6 +5,7 @@ import asyncio
 from typing import Union, Optional, AsyncGenerator
 from pyrogram import Client, filters, enums
 from pyrogram import types
+from pyrogram.errors import FloodWait
 from pyrogram.errors.exceptions.bad_request_400 import ChannelInvalid, ChatAdminRequired, UsernameInvalid, UsernameNotModified
 from config import Config
 
@@ -100,9 +101,13 @@ async def delete_all(lst_msg_id, chat, msg, bot):
             async for message in bot.iter_messages(chat, lst_msg_id, current):
                 current += 1
                 if current % 20 == 0:
-                    await msg.edit_text(
-                        text=f"Total messages fetched: <code>{current}</code>\nTotal messages Deleted: <code>{total_deleted}</code>\nErrors Occurred: <code>{errors}</code>"
-                    )
+                    try:
+                        await msg.edit_text(
+                            text=f"Total messages fetched: <code>{current}</code>\nTotal messages Deleted: <code>{total_deleted}</code>\nErrors Occurred: <code>{errors}</code>"
+                        )
+                    except FloodWait as e:
+                        logging.info(e)
+                        await asyncio.sleep(e.value)
                 try:
                     await message.delete()
                     total_deleted += 1
