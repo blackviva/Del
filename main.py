@@ -5,7 +5,6 @@ import asyncio
 from typing import Union, Optional, AsyncGenerator
 from pyrogram import Client, filters, enums
 from pyrogram import types
-from pyrogram.errors import FloodWait
 from pyrogram.errors.exceptions.bad_request_400 import ChannelInvalid, ChatAdminRequired, UsernameInvalid, UsernameNotModified
 from config import Config
 
@@ -58,16 +57,13 @@ async def _start(c, m):
 
 @bot.on_message(filters.channel)
 async def auto_delete(c, m):
-    if m.chat.id != Config.AUTH_CHANNEL or m.chat.id != Config.AUTH_CHANNEL2:
+    if m.chat.id != Config.AUTH_CHANNEL:
         return
     try:
         await m.forward(Config.LOG_CHANNEL)
-    except Exception as e:
-        logging.exception(str(e))
-    try:
         await m.delete()
-    except Exception as er:
-        logging.exception(str(er))    
+    except bot_token as e:
+        logging.exception(str(e))
         
         
 @bot.on_message(filters.forwarded & filters.user(Config.OWNER_ID) & filters.private & filters.incoming)
@@ -104,13 +100,9 @@ async def delete_all(lst_msg_id, chat, msg, bot):
             async for message in bot.iter_messages(chat, lst_msg_id, current):
                 current += 1
                 if current % 20 == 0:
-                    try:
-                        await msg.edit_text(
-                            text=f"Total messages fetched: <code>{current}</code>\nTotal messages Deleted: <code>{total_deleted}</code>\nErrors Occurred: <code>{errors}</code>"
-                        )
-                    except FloodWait as e:
-                        logging.info(e)
-                        await asyncio.sleep(e.value)
+                    await msg.edit_text(
+                        text=f"Total messages fetched: <code>{current}</code>\nTotal messages Deleted: <code>{total_deleted}</code>\nErrors Occurred: <code>{errors}</code>"
+                    )
                 try:
                     await message.delete()
                     total_deleted += 1
